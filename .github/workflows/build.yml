@@ -35,22 +35,21 @@ jobs:
           sudo chown $USER:$GROUPS /workdir
 
       - name: Clone source code
-        working-directory: /workdir
         run: |
           df -hT $PWD
+          pwd
           git clone https://github.com/alist-org/alist.git alist
-          ln -sf /workdir/alist $GITHUB_WORKSPACE/alist
 
       - name: Load custom build script
         run: |
+          pwd
           [ -e build.sh ] && mv build.sh alist/build.sh
-          chmod +x build.sh
-          cd alist
+          chmod +x alist/build.sh
 
       - name: Build
         run: |
-          cd alist
-          bash $GITHUB_WORKSPACE/build.sh release
+          pwd
+          bash alist/build.sh release
 
       - name: Release
         uses: softprops/action-gh-release@v1
