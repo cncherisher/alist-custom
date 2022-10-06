@@ -6,13 +6,7 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        platform: [ubuntu-20.04]
-        go-version: [1.18]
-
-    name: Release
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Setup Go
@@ -29,7 +23,8 @@ jobs:
         run: |
           docker pull techknowlogick/xgo:latest
           go install src.techknowlogick.com/xgo@latest
-          sudo apt install upx
+          sudo apt update
+          sudo apt install upx axel aria2
           sudo timedatectl set-timezone "Asia/Shanghai"
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
@@ -54,7 +49,23 @@ jobs:
           pwd
           bash build.sh release
 
-      - name: Release
+      - name: Generate release tag
+        id: tag
+        run: |
+          echo "::set-output name=release_tag::$(date +"%Y.%m.%d")"
+          touch release.txt
+          echo "::set-output name=status::success"
+
+      - name: Upload artifacts to release
         uses: softprops/action-gh-release@v1
+        if: steps.tag.outputs.status == 'success' && !cancelled()
         with:
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          body_path: release.txt
           files: build/compress/*
+
+       - name: Remove old Releases
+         uses: dev-drprasad/delete-older-releases@v0.2.0
+         with:
+           keep_latest: 7
+           delete_tags: true
