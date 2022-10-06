@@ -26,15 +26,12 @@ ldflags="\
 "
 
 FetchWebRelease() {
-  curl -L https://codeload.github.com/cncherisher/alist-web/tar.gz/refs/heads/main -o dist.tar.gz
-  tar -zxf dist.tar.gz
-  cd ./alist-web-main
-  pnpm && pnpm build
-  rm -rf ../public/dist
+  rm -rf ./public/dist
+  git clone https://github.com/cncherisher/alist-web.git alist-web --recursive 
+  cd alist-web
+  pnpm install && pnpm build
   mv -f dist ../public
-  rm -rf dist.tar.gz
   cd ..
-  pwd
 }
 
 
@@ -66,7 +63,7 @@ BuildRelease() {
     export CGO_ENABLED=1
     go build -o ./build/$appName-$os_arch -ldflags="$muslflags" -tags=jsoniter -v .
   done
-  xgo -out "$appName" -ldflags="$ldflags" -tags=jsoniter -v .
+  xgo -targets=linux/amd64,windows/amd64 -out "$appName" -ldflags="$ldflags" -tags=jsoniter -v .
   # why? Because some target platforms seem to have issues with upx compression
   upx -9 ./alist-linux-amd64
   upx -9 ./alist-windows*
@@ -77,11 +74,6 @@ MakeRelease() {
   cd build
   mkdir compress
   for i in $(find . -type f -name "$appName-linux-*"); do
-    cp "$i" alist
-    tar -czvf compress/"$i".tar.gz alist
-    rm -f alist
-  done
-  for i in $(find . -type f -name "$appName-darwin-*"); do
     cp "$i" alist
     tar -czvf compress/"$i".tar.gz alist
     rm -f alist
