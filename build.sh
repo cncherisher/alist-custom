@@ -4,6 +4,7 @@ goVersion=$(go version | sed 's/go version //')
 gitAuthor=$(git show -s --format='format:%aN <%ae>' HEAD)
 gitCommit=$(git log --pretty=format:"%h" -1)
 
+set -x
 if [ "$1" = "dev" ]; then
   version="dev"
   webVersion="dev"
@@ -24,37 +25,18 @@ ldflags="\
 -X 'github.com/alist-org/alist/v3/internal/conf.WebVersion=$webVersion' \
 "
 
-FetchWebDev() {
-  curl -L https://codeload.github.com/alist-org/web-dist/tar.gz/refs/heads/dev -o web-dist-dev.tar.gz
-  tar -zxf web-dist-dev.tar.gz
-  rm -rf public/dist
-  mv -f web-dist-dev/dist public
-  rm -rf web-dist-dev web-dist-dev.tar.gz
-}
-
 FetchWebRelease() {
-  curl -L https://github.com/alist-org/alist-web/releases/latest/download/dist.tar.gz -o dist.tar.gz
+  curl -L https://codeload.github.com/cncherisher/alist-web/tar.gz/refs/heads/main -o dist.tar.gz
   tar -zxf dist.tar.gz
-  rm -rf public/dist
-  mv -f dist public
+  cd ./alist-web-main
+  pnpm && pnpm build
+  rm -rf ../public/dist
+  mv -f dist ../public
   rm -rf dist.tar.gz
+  cd ..
+  pwd
 }
 
-BuildDev() {
-  rm -rf .git/
-  xgo -targets=linux/amd64,windows/amd64 -out "$appName" -ldflags="$ldflags" -tags=jsoniter -v .
-  mkdir -p "dist"
-  mv alist-* dist
-  cd dist
-  upx -9 ./alist-linux*
-  upx -9 ./alist-windows*
-  find . -type f -print0 | xargs -0 md5sum >md5.txt
-  cat md5.txt
-}
-
-BuildDocker() {
-  go build -o ./bin/alist -ldflags="$ldflags" -tags=jsoniter .
-}
 
 BuildRelease() {
   echo -e "BuiltTime=$builtAt"
@@ -68,7 +50,7 @@ BuildRelease() {
   FILES=(x86_64-linux-musl-cross aarch64-linux-musl-cross arm-linux-musleabihf-cross)
   for i in "${FILES[@]}"; do
     url="${BASE}${i}.tgz"
-    axel -n 4 "${url}" -o "${i}.tgz"
+    axel -q -n 4 "${url}" -o "${i}.tgz"
     #curl -L -o "${i}.tgz" "${url}"
     sudo tar xf "${i}.tgz" --strip-components 1 -C /usr/local
   done
@@ -115,21 +97,10 @@ MakeRelease() {
   cd ../..
 }
 
-if [ "$1" = "dev" ]; then
-  FetchWebDev
-  if [ "$2" = "docker" ]; then
-    BuildDocker
-  else
-    BuildDev
-  fi
-elif [ "$1" = "release" ]; then
+if [ "$1" = "release" ]; then
   FetchWebRelease
-  if [ "$2" = "docker" ]; then
-    BuildDocker
-  else
-    BuildRelease
-    MakeRelease
-  fi
+  BuildRelease
+  MakeRelease
 else
   echo -e "Parameter error"
 fi

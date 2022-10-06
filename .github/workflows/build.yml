@@ -14,6 +14,16 @@ jobs:
         with:
           go-version: 1.18
 
+      - name: setup-node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: setup-pnpm
+        uses: pnpm/action-setup@v2.2.2
+        with:
+          version: latest
+
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -62,10 +72,12 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.release_tag }}
           body_path: release.txt
-          files: build/compress/*
+          files: /workdir/alist/build/compress/*
 
       - name: Remove old Releases
         uses: dev-drprasad/delete-older-releases@v0.2.0
         with:
-          keep_latest: 7
+          keep_latest: 3
           delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
