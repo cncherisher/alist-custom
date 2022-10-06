@@ -26,7 +26,7 @@ ldflags="\
 
 FetchWebDev() {
   curl -L https://codeload.github.com/alist-org/web-dist/tar.gz/refs/heads/dev -o web-dist-dev.tar.gz
-  tar -zxvf web-dist-dev.tar.gz
+  tar -zxf web-dist-dev.tar.gz
   rm -rf public/dist
   mv -f web-dist-dev/dist public
   rm -rf web-dist-dev web-dist-dev.tar.gz
@@ -34,7 +34,7 @@ FetchWebDev() {
 
 FetchWebRelease() {
   curl -L https://github.com/alist-org/alist-web/releases/latest/download/dist.tar.gz -o dist.tar.gz
-  tar -zxvf dist.tar.gz
+  tar -zxf dist.tar.gz
   rm -rf public/dist
   mv -f dist public
   rm -rf dist.tar.gz
@@ -42,7 +42,7 @@ FetchWebRelease() {
 
 BuildDev() {
   rm -rf .git/
-  xgo -targets=linux/amd64,windows/amd64,darwin/amd64 -out "$appName" -ldflags="$ldflags" -tags=jsoniter .
+  xgo -targets=linux/amd64,windows/amd64 -out "$appName" -ldflags="$ldflags" -tags=jsoniter -v .
   mkdir -p "dist"
   mv alist-* dist
   cd dist
@@ -65,14 +65,15 @@ BuildRelease() {
   mkdir -p "build"
   muslflags="--extldflags '-static -fpic' $ldflags"
   BASE="https://musl.sztu.ga/"
-  FILES=(x86_64-linux-musl-cross aarch64-linux-musl-cross arm-linux-musleabihf-cross mips-linux-musl-cross mips64-linux-musl-cross mips64el-linux-musl-cross mipsel-linux-musl-cross powerpc64le-linux-musl-cross s390x-linux-musl-cross)
+  FILES=(x86_64-linux-musl-cross aarch64-linux-musl-cross arm-linux-musleabihf-cross)
   for i in "${FILES[@]}"; do
     url="${BASE}${i}.tgz"
-    curl -L -o "${i}.tgz" "${url}"
+    axel -n 4 "${url}" -o "${i}.tgz"
+    #curl -L -o "${i}.tgz" "${url}"
     sudo tar xf "${i}.tgz" --strip-components 1 -C /usr/local
   done
-  OS_ARCHES=(linux-musl-amd64 linux-musl-arm64 linux-musl-arm linux-musl-mips linux-musl-mips64 linux-musl-mips64le linux-musl-mipsle linux-musl-ppc64le linux-musl-s390x)
-  CGO_ARGS=(x86_64-linux-musl-gcc aarch64-linux-musl-gcc arm-linux-musleabihf-gcc mips-linux-musl-gcc mips64-linux-musl-gcc mips64el-linux-musl-gcc mipsel-linux-musl-gcc powerpc64le-linux-musl-gcc s390x-linux-musl-gcc)
+  OS_ARCHES=(linux-musl-amd64 linux-musl-arm64 linux-musl-arm)
+  CGO_ARGS=(x86_64-linux-musl-gcc aarch64-linux-musl-gcc arm-linux-musleabihf-gcc)
   for i in "${!OS_ARCHES[@]}"; do
     os_arch=${OS_ARCHES[$i]}
     cgo_cc=${CGO_ARGS[$i]}
@@ -81,9 +82,9 @@ BuildRelease() {
     export GOARCH=${os_arch##*-}
     export CC=${cgo_cc}
     export CGO_ENABLED=1
-    go build -o ./build/$appName-$os_arch -ldflags="$muslflags" -tags=jsoniter .
+    go build -o ./build/$appName-$os_arch -ldflags="$muslflags" -tags=jsoniter -v .
   done
-  xgo -out "$appName" -ldflags="$ldflags" -tags=jsoniter .
+  xgo -out "$appName" -ldflags="$ldflags" -tags=jsoniter -v .
   # why? Because some target platforms seem to have issues with upx compression
   upx -9 ./alist-linux-amd64
   upx -9 ./alist-windows*
