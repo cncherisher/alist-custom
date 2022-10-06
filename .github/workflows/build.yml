@@ -1,0 +1,58 @@
+name: Alist custom build
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [ubuntu-20.04]
+        go-version: [1.18]
+
+    name: Release
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          docker pull techknowlogick/xgo:latest
+          go install src.techknowlogick.com/xgo@latest
+          sudo apt install upx
+          sudo timedatectl set-timezone "Asia/Shanghai"
+          sudo mkdir -p /workdir
+          sudo chown $USER:$GROUPS /workdir
+
+      - name: Clone source code
+        working-directory: /workdir
+        run: |
+          df -hT $PWD
+          git clone https://github.com/alist-org/alist.git alist
+          ln -sf /workdir/alist $GITHUB_WORKSPACE/alist
+
+      - name: Load custom build script
+        run: |
+          [ -e build.sh ] && mv build.sh alist/build.sh
+          chmod +x build.sh
+          cd alist
+
+      - name: Build
+        run: |
+          cd alist
+          bash $GITHUB_WORKSPACE/build.sh release
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/compress/*
