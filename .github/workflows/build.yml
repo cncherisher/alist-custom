@@ -33,8 +33,8 @@ jobs:
         run: |
           docker pull techknowlogick/xgo:latest
           go install src.techknowlogick.com/xgo@latest
-          sudo apt update
-          sudo apt install upx axel aria2
+          sudo apt-get -qq update
+          sudo apt-get -qq install upx axel aria2
           sudo timedatectl set-timezone "Asia/Shanghai"
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
@@ -42,21 +42,17 @@ jobs:
       - name: Clone source code
         working-directory: /workdir
         run: |
-          df -hT $PWD
-          pwd
           git clone https://github.com/alist-org/alist.git alist
           ln -sf /workdir/alist $GITHUB_WORKSPACE/alist
 
       - name: Load custom build script
         run: |
-          pwd
           [ -e build.sh ] && mv build.sh alist/build.sh
           chmod +x alist/build.sh
 
       - name: Build
         working-directory: /workdir/alist
         run: |
-          pwd
           bash build.sh release
 
       - name: Generate release tag
@@ -72,7 +68,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.release_tag }}
           body_path: release.txt
-          files: /workdir/alist/build/compress/*
+          files: /workdir/alist/build/*
 
       - name: Remove old Releases
         uses: dev-drprasad/delete-older-releases@v0.2.0

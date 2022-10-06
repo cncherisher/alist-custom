@@ -29,7 +29,11 @@ FetchWebRelease() {
   rm -rf ./public/dist
   git clone https://github.com/cncherisher/alist-web.git alist-web --recursive 
   cd alist-web
-  pnpm install && pnpm build
+  webVersion=$(git describe --abbrev=0 --tags)
+  sed -i -e "s/0.0.0/$webVersion/g" package.json
+  pnpm install
+  pnpm i18n
+  pnpm build
   mv -f dist ../public
   cd ..
 }
@@ -70,29 +74,9 @@ BuildRelease() {
   mv alist-* build
 }
 
-MakeRelease() {
-  cd build
-  mkdir compress
-  for i in $(find . -type f -name "$appName-linux-*"); do
-    cp "$i" alist
-    tar -czvf compress/"$i".tar.gz alist
-    rm -f alist
-  done
-  for i in $(find . -type f -name "$appName-windows-*"); do
-    cp "$i" alist.exe
-    zip compress/$(echo $i | sed 's/\.[^.]*$//').zip alist.exe
-    rm -f alist.exe
-  done
-  cd compress
-  find . -type f -print0 | xargs -0 md5sum >md5.txt
-  cat md5.txt
-  cd ../..
-}
-
 if [ "$1" = "release" ]; then
   FetchWebRelease
   BuildRelease
-  MakeRelease
 else
   echo -e "Parameter error"
 fi
