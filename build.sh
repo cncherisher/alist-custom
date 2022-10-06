@@ -57,10 +57,14 @@ BuildDocker() {
 }
 
 BuildRelease() {
+  echo -e "BuiltTime=$builtAt"
+  echo -e "goVersion=$goVersion"
+  echo -e "gitAuthor=$gitAuthor"
+  echo -e "gitCommit=$gitCommit"
   rm -rf .git/
   mkdir -p "build"
   muslflags="--extldflags '-static -fpic' $ldflags"
-  BASE="https://musl.nn.ci/"
+  BASE="https://musl.cc/"
   FILES=(x86_64-linux-musl-cross aarch64-linux-musl-cross arm-linux-musleabihf-cross mips-linux-musl-cross mips64-linux-musl-cross mips64el-linux-musl-cross mipsel-linux-musl-cross powerpc64le-linux-musl-cross s390x-linux-musl-cross)
   for i in "${FILES[@]}"; do
     url="${BASE}${i}.tgz"
