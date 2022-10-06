@@ -64,8 +64,8 @@ jobs:
           body_path: release.txt
           files: build/compress/*
 
-       - name: Remove old Releases
-         uses: dev-drprasad/delete-older-releases@v0.2.0
-         with:
-           keep_latest: 7
-           delete_tags: true
+      - name: Remove old Releases
+        uses: dev-drprasad/delete-older-releases@v0.2.0
+        with:
+          keep_latest: 7
+          delete_tags: true
